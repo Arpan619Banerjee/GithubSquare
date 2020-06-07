@@ -18,6 +18,7 @@ const searchController = (function () {
     try {
       const developersData = await axios(`https://ghapi.huchen.dev/developers`);
       this.developers = developersData.data;
+      console.log(developersData.data);
       return developers.data;
     } catch (e) {
       return `We've an error here: ${e}`;
@@ -170,6 +171,40 @@ const viewController = (function () {
     document.querySelector(".selected-duration").textContent = data;
   };
 
+  const validateDevelopersDescription = function (obj) {
+    if (obj.repo.description) {
+      let description =
+        obj.repo.description.length > 70
+          ? obj.repo.description.substr(0, 70) + "..."
+          : obj.repo.description;
+      return description;
+    } else {
+      return "No description provided";
+    }
+  };
+
+  const validateReposDescription = function (obj) {
+    if (obj.description) {
+      let description =
+        obj.description.length > 70
+          ? obj.description.substr(0, 70) + "..."
+          : obj.description;
+      return description;
+    } else {
+      return "No description provided!";
+    }
+  };
+
+  const toggleOpacity = function (e) {
+    console.log(e.target);
+    let allButtons = document.querySelectorAll(".filter-button button");
+    allButtons.forEach(function (cur) {
+      cur.classList.add("fade");
+    });
+    console.log(e.target);
+    e.target.parentNode.classList.remove("fade");
+  };
+
   function applyBgColor(language) {
     if (language === "Shell") {
       return "#89e051";
@@ -200,7 +235,120 @@ const viewController = (function () {
     }
   }
 
+  function displayReposByList(array) {
+    document.querySelector(".grid").innerHTML = "";
+    array.forEach(function (obj) {
+      let html = `
+      <div class='repoItem'>
+      <div class='repoItem__header'>
+        <div class='repoItem__header--info'>
+            <span class='repoItem__header--username'>${obj.author}</span>
+            <span>/</span>
+            <span class='repoItem__header--reponame'>${obj.name}</span>
+        </div>
+    </div>
+    <div class="repoItem__main">
+        <div class="card__about--developers">
+            <span class="card__about--text">Built by</span>
+            <span class="card__about--images">
+                ${obj.builtBy
+                  .map(function (cur, i = 0) {
+                    let newText = `<a class='card__about--developer${i}' href="#"><img class='teamImage' src=${cur.avatar}
+                        alt=""></a>`;
+                    i++;
+                    return newText;
+                  })
+                  .join("")}
+            </span>
+        </div>
+        <div class="repoItem__description">
+            <p>${validateReposDescription(obj)}</p>
+        </div>
+    </div>
+    <div class="repoItem__footer">
+        <div class="repoItem__footer--language">
+            <span class='circle' style='background-color:${applyBgColor(
+              obj.language
+            )}'></span>
+            ${obj.language}
+        </div>
+        <div class="card__ratings repoItem__footer--ratings">
+            <div class='git-info'>
+                <ul>
+                    <li class="followers">
+                        <span class="followers-text small"><img class='color-star' src='./img/starfilled.png'></span>
+                        <div class='followers-count'>${obj.stars}</div>
+                    </li>
+                    <li class="stars">
+                        <span class="forked-text small"><img class='color-forked' src='./img/forked.svg'></span>
+                        <div class='stars-count'>${obj.forks}</div>
+                    </li>
+                    <li class="forked">
+                        <span class="stars-text small"><img class='color-issues' src='./img/starstoday.png'></span>
+                        <div class='forked-count'>${
+                          obj.currentPeriodStars
+                        } <span class='stars-today'>stars today</span></div>
+
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="repoItem__logo">
+          <img src='${
+            obj.avatar
+          }' width:'100px' height:'100px' class='repoItem__image'>
+    </div>
+    </div>
+      `;
+      document.querySelector(".grid").insertAdjacentHTML("beforeend", html);
+    });
+  }
+
+  function displayDevelopersByList(array) {
+    document.querySelector(".grid").innerHTML = "";
+    array.forEach(function (obj) {
+      let html = `
+    <div class="developerItem">
+        <div class="developerItem__header card__header developers__header">
+            <div class="card__logo developer__logo">
+                <img class='developerImage developerItem__image' src="${
+                  obj.avatar
+                }" alt="">
+            </div>
+            <div class="repoCard__content">
+                <h5 class='margin-0 developer__name'>${obj.name}</h5>
+                <span class='developer__username'>${obj.username}</span>
+            </div>
+        </div>
+        <div class="developerItem__main">
+            <div class='developer__status'>
+                <div class='repoCard__status--img'>
+                    <img class="status__img" src="../img/fire.png" />
+                </div>
+                <div class='repoCard__text'>Popular Repo</div>
+            </div>
+            <div class="repoCard__name developerRepo__name"><a href=${
+              obj.url
+            }>${
+        obj.repo.name.length > 11
+          ? obj.repo.name.substr(0, 11) + "..."
+          : obj.repo.name
+      }</a>
+            </div>
+            <div class="repoCard__description">
+                <p>${validateDevelopersDescription(obj)}</p>
+            </div>
+        </div>
+
+    </div>
+    `;
+      document.querySelector(".grid").insertAdjacentHTML("beforeend", html);
+    });
+  }
+
   function displayRepos(array) {
+    document.querySelector(".grid").innerHTML = "";
     array.forEach(function (obj) {
       let html = `
     <div class="repoCard">
@@ -239,11 +387,7 @@ const viewController = (function () {
                         </div>
                     </div>
                     <div class="card__description">
-                        <p>${
-                          obj.description.length > 120
-                            ? obj.description.substr(0, 120) + "..."
-                            : obj.description
-                        }</p>
+                        <p>${validateReposDescription(obj)}</p>
                     </div>
                     <div class="card__ratings">
                       <div class='git-info'>
@@ -278,6 +422,7 @@ const viewController = (function () {
   }
 
   function displayDevelopers(array) {
+    document.querySelector(".grid").innerHTML = "";
     array.forEach(function (obj) {
       let html = `
     <div class="repoCard developerCard ">
@@ -308,11 +453,7 @@ const viewController = (function () {
                     </div>
                     
                     <div class="repoCard__description">
-                        <p>${
-                          obj.repo.description.length > 70
-                            ? obj.repo.description.substr(0, 70) + "..."
-                            : obj.repo.description
-                        }</p>
+                        <p>${validateDevelopersDescription(obj)}</p>
                     </div>
                 </div>
             </div>
@@ -331,6 +472,9 @@ const viewController = (function () {
     displayDevelopers,
     showSelectedOption,
     showSelectedDuration,
+    displayReposByList,
+    displayDevelopersByList,
+    toggleOpacity,
   };
 })();
 
@@ -398,7 +542,7 @@ const controller = (function () {
 
   // Event listeners
 
-  // To toggle select menu
+  // To toggle select menu active class
   document.querySelector(".selected-language").addEventListener("click", () => {
     document.querySelector(".lan-opt-container").classList.toggle("active");
   });
@@ -432,6 +576,32 @@ const controller = (function () {
     // call the main handler
     handleMain(e);
   });
+
+  // display type listener
+  document
+    .querySelector(".displayType-button")
+    .addEventListener("click", (e) => {
+      viewController.toggleOpacity(e);
+      if (e.target.parentNode.classList.contains("grid__btn")) {
+        // toggle the fade class
+        // viewController.toggleOpacity(e);
+
+        if (document.querySelector(".btn-repo").classList.contains("active")) {
+          viewController.displayRepos(state.type.repos);
+        } else {
+          console.log("not grid");
+          viewController.displayDevelopers(state.type.developers);
+        }
+      } else if (e.target.parentNode.classList.contains("list__btn")) {
+        // toggle the fade class
+        // viewController.toggleOpacity(e);
+        if (document.querySelector(".btn-repo").classList.contains("active")) {
+          viewController.displayReposByList(state.type.repos);
+        } else {
+          viewController.displayDevelopersByList(state.type.developers);
+        }
+      }
+    });
 
   // languages select menu listener
   document.querySelectorAll(".opt-lan").forEach((item) => {
